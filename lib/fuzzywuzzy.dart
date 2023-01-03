@@ -109,6 +109,19 @@ List<ExtractedResult<T>> extractAllSorted<T>({
   return extractor.extractSorted(query, choices, ratio, getter);
 }
 
+List<ExtractedResult<T>> extractAllSortedMultiField<T>({
+  required String query,
+  required List<T> choices,
+  required int cutoff,
+  required List<int> cutoffs,
+  Applicable ratio = const WeightedRatio(),
+  required List<String Function(T obj)> getters,
+}) {
+  var extractor = Extractor(cutoff);
+  return extractor.extractSortedMultiField(
+      query, choices, ratio, getters, cutoffs);
+}
+
 /// Find the single best match above the [cutoff] in a list of choices.
 /// [getter] is optional for [String]  types, but MUST NOT be null for any other
 /// types

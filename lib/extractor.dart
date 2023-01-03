@@ -1,6 +1,6 @@
+import 'package:collection/collection.dart';
 import 'package:fuzzywuzzy/applicable.dart';
 import 'package:fuzzywuzzy/model/extracted_result.dart';
-import 'package:collection/collection.dart';
 
 /// Class for extracting matches from a given list
 class Extractor {
@@ -35,6 +35,43 @@ class Extractor {
     return yields;
   }
 
+  /// Returns the list of choices with their associated scores of similarity in a list of [ExtractedResult]
+  List<ExtractedResult<T>> extractWithoutOrderMultiFields<T>(
+      String query,
+      List<T> choices,
+      Applicable func,
+      List<String Function(T obj)> getters,
+      List<int> cutoffs) {
+    var yields = List<ExtractedResult<T>>.empty(growable: true);
+    var index = 0;
+
+    for (var s in choices) {
+      var subScores = List<int>.empty(growable: true);
+      for (var i = 0; i < getters.length; i++) {
+        final getter = getters[i];
+        final queryPhrase = query.toLowerCase();
+        final getterPhrase = getter(s).toLowerCase();
+        final phraseContains = getterPhrase.contains(queryPhrase);
+        var subScore = func.apply(query.toLowerCase(), getter(s).toLowerCase());
+        if (subScore > cutoffs[i]) {
+          subScore = phraseContains ? 100 : subScore;
+          subScores.add(subScore);
+        }
+        print(getter(s));
+        print(
+            'Score:$subScore - ${cutoffs[i]} - ${subScore > cutoffs[i] ? 'success' : 'failed'}');
+      }
+      final score = subScores.isEmpty ? 0 : subScores.average;
+      print(score.toInt());
+      if (score >= _cutoff) {
+        yields.add(ExtractedResult<T>(s, score.toInt(), index, getters.first));
+      }
+      index++;
+    }
+
+    return yields;
+  }
+
   /// Find the single best match above a score in a list of choices
   ExtractedResult<T> extractOne<T>(
       String query, List<T> choices, Applicable func,
@@ -51,6 +88,20 @@ class Extractor {
       String query, List<T> choices, Applicable func,
       [String Function(T obj)? getter]) {
     var best = extractWithoutOrder(query, choices, func, getter)..sort();
+    return best.reversed.toList();
+  }
+
+  /// Creates a **sorted** list of [ExtractedResult] from the most similar choices
+  /// to the least. Allows multiple fields.
+  List<ExtractedResult<T>> extractSortedMultiField<T>(
+      String query,
+      List<T> choices,
+      Applicable func,
+      List<String Function(T obj)> getters,
+      List<int> cutoffs) {
+    var best =
+        extractWithoutOrderMultiFields(query, choices, func, getters, cutoffs)
+          ..sort((a, b) => a.score.compareTo(b.score));
     return best.reversed.toList();
   }
 
