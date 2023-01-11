@@ -57,18 +57,13 @@ class Extractor {
           subScore = phraseContains ? 100 : subScore;
           subScores.add(subScore);
         }
-        print(getter(s));
-        print(
-            'Score:$subScore - ${cutoffs[i]} - ${subScore > cutoffs[i] ? 'success' : 'failed'}');
       }
       final score = subScores.isEmpty ? 0 : subScores.average;
-      print(score.toInt());
       if (score >= _cutoff) {
         yields.add(ExtractedResult<T>(s, score.toInt(), index, getters.first));
       }
       index++;
     }
-
     return yields;
   }
 
